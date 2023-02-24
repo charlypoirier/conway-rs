@@ -1,2 +1,1 @@
-# conway-rs
-Conway's game of life in Rust
+# Conway's game of life
