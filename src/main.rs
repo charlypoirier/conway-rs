@@ -4,11 +4,11 @@ fn clear() {
     print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
 }
 
-fn init_state(width: usize, height: usize) -> Vec<Vec<bool>> {
-    let mut state = vec![vec![true; width]; height];
+fn init_state(cols: usize, rows: usize) -> Vec<Vec<bool>> {
+    let mut state = vec![vec![true; cols]; rows];
     let mut rng = thread_rng();
-    for i in 0..height {
-        for j in 0..width {
+    for i in 0..rows {
+        for j in 0..cols {
             state[i][j] = rng.gen_bool(0.2);
         }
     }
@@ -18,17 +18,29 @@ fn init_state(width: usize, height: usize) -> Vec<Vec<bool>> {
 fn update_state(state: &mut Vec<Vec<bool>>) {
     let rows = state.len();
     let cols = state[0].len();
-    let mut updated_state = vec![vec![true; cols]; rows];
-    let mut rng = thread_rng();
+    let mut updated_state = vec![vec![false; cols]; rows];
 
-    // Create the updated state
-    for i in 0..state.len() {
-        for j in 0..state[i].len() {
-            updated_state[i][j] = rng.gen_bool(0.2);
+    for i in 0..rows {
+        for j in 0..cols {
+            let mut neighbors = 0;
+            for k in (i.saturating_sub(1))..=(i + 1).min(rows - 1) {
+                for l in (j.saturating_sub(1))..=(j + 1).min(cols - 1) {
+                    if (k != i || l != j) && state[k][l] {
+                        neighbors += 1;
+                    }
+                }
+            }
+
+            if !state[i][j] {
+                if neighbors == 3 {
+                    updated_state[i][j] = true;
+                }
+            } else if neighbors > 1 && neighbors < 4 {
+                updated_state[i][j] = true;
+            }
         }
     }
 
-    // Replace borrowed state with the updated state
     *state = updated_state;
 }
 
@@ -36,17 +48,16 @@ fn print_state(state: &Vec<Vec<bool>>) {
     for i in 0..state.len() {
         for j in 0..state[i].len() {
             match state[i][j] {
-                true => print!("■"), // ■, █
+                true => print!("█"),
                 false => print!(" "),
             }
         }
-        println!();
     }
 }
 
 fn main() {
-    let (width, height) = term_size::dimensions().unwrap();
-    let mut state = init_state(width, height);
+    let (cols, rows) = term_size::dimensions().unwrap();
+    let mut state = init_state(cols, rows);
 
     loop {
         clear();
