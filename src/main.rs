@@ -1,33 +1,57 @@
 use rand::{thread_rng, Rng};
 
-fn clear_console() {
+fn clear() {
     print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
 }
 
-fn init_cells(width: usize, height: usize) -> Vec<Vec<bool>> {
-    let mut cells = vec![vec![true; width]; height];
+fn init_state(width: usize, height: usize) -> Vec<Vec<bool>> {
+    let mut state = vec![vec![true; width]; height];
     let mut rng = thread_rng();
     for i in 0..height {
         for j in 0..width {
-            cells[i][j] = rng.gen_bool(0.3);
+            state[i][j] = rng.gen_bool(0.2);
         }
     }
-    return cells;
+    return state;
 }
 
-fn main() {
-    let (width, height) = term_size::dimensions().unwrap();
-    let cells = init_cells(width, height);
+fn update_state(state: &mut Vec<Vec<bool>>) {
+    let rows = state.len();
+    let cols = state[0].len();
+    let mut updated_state = vec![vec![true; cols]; rows];
+    let mut rng = thread_rng();
 
-    clear_console();
+    // Create the updated state
+    for i in 0..state.len() {
+        for j in 0..state[i].len() {
+            updated_state[i][j] = rng.gen_bool(0.2);
+        }
+    }
 
-    for i in 0..height {
-        for j in 0..width {
-            match cells[i][j] {
-                true => print!("█"),
+    // Replace borrowed state with the updated state
+    *state = updated_state;
+}
+
+fn print_state(state: &Vec<Vec<bool>>) {
+    for i in 0..state.len() {
+        for j in 0..state[i].len() {
+            match state[i][j] {
+                true => print!("■"), // ■, █
                 false => print!(" "),
             }
         }
         println!();
+    }
+}
+
+fn main() {
+    let (width, height) = term_size::dimensions().unwrap();
+    let mut state = init_state(width, height);
+
+    loop {
+        clear();
+        print_state(&state);
+        update_state(&mut state);
+        std::thread::sleep(std::time::Duration::from_millis(500));
     }
 }
